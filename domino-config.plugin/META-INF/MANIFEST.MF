@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Domino Configuration Plugin
+Bundle-SymbolicName: domino-config.plugin;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-ClassPath: .,
+ lib/slf4j-api-1.7.30.jar,
+ lib/slf4j-simple-1.7.30.jar
+Export-Package: ch.hasselba.xpages.config;uses:="org.slf4j,ch.hasselba.xpages.config.intf",
+ ch.hasselba.xpages.config.intf,
+ ch.hasselba.xpages.config.plugin
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Automatic-Module-Name: domino.config.plugin
+Bundle-Vendor: Sven Hasselbach <freelancer@hasselba.ch>
+Import-Package: org.osgi.framework
+Require-Bundle: com.ibm.xsp.core;bundle-version="9.0.1",
+ com.ibm.commons;bundle-version="9.0.1",
+ com.ibm.notes.java.api;bundle-version="8.5.3",
+ com.ibm.domino.osgi.core,
+ com.ibm.xsp.extlib.core;bundle-version="9.0.1"
+Bundle-Activator: ch.hasselba.xpages.config.plugin.Activator
+Bundle-ActivationPolicy: lazy
