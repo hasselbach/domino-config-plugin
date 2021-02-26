@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/domino-config.feature_1.0.0.202102260940.jar" id="domino-config.feature" version="1.0.0.202102260940">
+      <category name="domino-config"/>
+   </feature>
+   <category-def name="domino-config" label="Domino Config">
+      <description>
+         Domino Configuration
+      </description>
+   </category-def>
+</site>
