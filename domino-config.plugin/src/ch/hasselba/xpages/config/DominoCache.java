@@ -1,5 +1,9 @@
 package ch.hasselba.xpages.config;
 
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +17,8 @@ import lotus.domino.Item;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
 import lotus.domino.View;
+import lotus.domino.ViewEntry;
+import lotus.domino.ViewNavigator;
 import lotus.domino.RichTextItem;
 
 public class DominoCache {
@@ -20,13 +26,15 @@ public class DominoCache {
 	Logger log = LoggerFactory.getLogger(DominoCache.class);
 
 	private int cacheMaxAge = 60;
+	
 	private String confDBServer = "Dev01";
 	private String confDBPath = "CacheDB.nsf";
 
 	private static DominoCache instance;
 	private static Object syncObj = new Object();
 	private static CachedConcurrentHashMap<String, ICacheItem> cache;
-
+	private static TreeSet<String> usersList;
+	
 	private DominoCache() {
 		// hidden constructor
 		log.info("Creating new DominoCache object.");
@@ -62,7 +70,7 @@ public class DominoCache {
 		}
 
 		DominoCache.cache = new CachedConcurrentHashMap<String, ICacheItem>(cacheMaxAge);
-
+		loadUserList();
 	}
 
 	public void destroy() {
@@ -205,7 +213,7 @@ public class DominoCache {
 
 			log.info("Loading key '{}' into cache.", fullKey);
 
-			final String value = getValueFromDocument(key, fieldName, session);
+			final Object value = getValueFromDocument(key, fieldName, session);
 			log.info("Adding key '{}' into cache.", fullKey);
 
 			final ICacheItem item = new CacheItem(fullKey, value);
@@ -213,5 +221,70 @@ public class DominoCache {
 			return item;
 		}
 
+	}
+	
+	private void loadUserList() {
+		Session session = null;
+		Database db = null;
+		View view = null;
+		ViewNavigator vn = null;
+		ViewEntry ve = null;
+		ViewEntry tmpVe = null;
+		
+		try {
+			synchronized (syncObj) {
+				DominoCache.usersList = new TreeSet<String>();
+				session = ExtLibUtil.getCurrentSessionAsSignerWithFullAccess();
+				log.debug("Opening Config Database '{}!!{}'", confDBServer, confDBPath);
+				db = session.getDatabase(confDBServer, confDBPath, false);
+				if (db == null) {
+					log.error("Database '{}!!{}' not found or unable to open.", confDBServer, confDBPath);
+					throw new RuntimeException("ConfigDB not found.");
+				}
+				if (!db.isOpen())
+					db.open();
+
+				view = db.getView("luByUsers");
+				if (view == null) {
+					log.error("Lookup View not found.");
+					throw new RuntimeException("Lookup View not found.");
+				}
+				view.refresh();
+				
+				vn = view.createViewNav();
+				
+				log.debug("Found {} entries for user names", vn.getCount() );
+				
+				ve = vn.getFirst();
+				while( ve != null ) {
+					
+					String userEntry = (String) ve.getColumnValues().get(0);
+					DominoCache.usersList.add(userEntry);
+					tmpVe = ve;
+					ve = vn.getNextCategory();
+					Utils.recycle( tmpVe );
+	
+				}
+				
+
+			}
+
+		} catch (NotesException e) {
+			log.error("Notes Exception", e);
+		} finally {
+			Utils.recycle(ve);
+			Utils.recycle(tmpVe);	
+			Utils.recycle(vn);
+			Utils.recycle(view);
+			Utils.recycle(db);
+		}
+	}
+
+	public static Set<String> getUsersList() {
+		return usersList;
+	}
+
+	public static void setUsersList(Set<String> usersList) {
+		DominoCache.usersList = (TreeSet<String>) usersList;
 	}
 }
